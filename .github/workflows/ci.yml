@@ -24,7 +24,7 @@ jobs:
       - name: Tests
         run: ./gradlew :core:test --no-daemon
 
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
 
       - name: Build
         run: ./gradlew :app:assembleDebug --no-daemon
