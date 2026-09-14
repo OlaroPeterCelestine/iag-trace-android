@@ -1,6 +1,7 @@
 package africa.iag.trace.core
 
 const val DEMO_PASSWORD = "iagdemo"
+const val APP_NAME = "IAG Trace"
 const val APP_VERSION = "1.0.0"
 const val STORE_KEY = "iag-trace-android-v1"
 
