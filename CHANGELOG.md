@@ -13,6 +13,8 @@ The version in `app/build.gradle.kts` (`versionName`) is the source of truth.
 
 - Staff and farmer desks use the same orange grouped layout as IAG Central, with system light and dark mode
 - Sign-in uses the official Inspire Africa Group logo
+- Splash screen and app icon use the official IAG color logo on black
+- Sign in is prefilled with admin / iagdemo
 
 
 

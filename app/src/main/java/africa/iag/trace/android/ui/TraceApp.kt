@@ -3,7 +3,15 @@ package africa.iag.trace.android.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import africa.iag.trace.android.ui.theme.IagBrandLogo
+import kotlinx.coroutines.delay
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Home
@@ -24,6 +32,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -40,6 +49,20 @@ import africa.iag.trace.core.TraceStore
 @Composable
 fun TraceApp(store: TraceStore) {
     rememberStoreTick(store)
+    var showSplash by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(1350)
+        showSplash = false
+    }
+    if (showSplash) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(Color.Black),
+            contentAlignment = Alignment.Center,
+        ) {
+            IagBrandLogo(modifier = Modifier.fillMaxWidth(0.72f).padding(horizontal = 24.dp), height = 132.dp)
+        }
+        return
+    }
     val nav = rememberNavController()
     val start = if (store.isSignedIn) "shell" else "login"
     NavHost(navController = nav, startDestination = start) {

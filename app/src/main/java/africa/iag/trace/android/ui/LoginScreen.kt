@@ -33,13 +33,14 @@ import androidx.compose.ui.unit.sp
 import africa.iag.trace.android.ui.theme.IagBrandLogo
 import africa.iag.trace.android.ui.theme.rememberStoreTick
 import africa.iag.trace.core.APP_NAME
+import africa.iag.trace.core.DEMO_PASSWORD
 import africa.iag.trace.core.TraceStore
 
 @Composable
 fun LoginScreen(store: TraceStore, onSignedIn: () -> Unit) {
     rememberStoreTick(store)
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("admin") }
+    var password by remember { mutableStateOf(DEMO_PASSWORD) }
     var error by remember { mutableStateOf<String?>(null) }
     var showReset by remember { mutableStateOf(false) }
 
@@ -115,7 +116,7 @@ fun LoginScreen(store: TraceStore, onSignedIn: () -> Unit) {
             }
             Spacer(Modifier.height(16.dp))
             Text(
-                "Usernames include farmer, supplier, agent, and admin.",
+                "Usernames include farmer, supplier, agent, and admin. Password is iagdemo.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center,

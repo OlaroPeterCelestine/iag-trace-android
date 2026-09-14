@@ -9,6 +9,7 @@ import africa.iag.trace.android.ui.theme.TraceAndroidTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.Theme_TraceAndroid)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val app = application as TraceAndroidApp
