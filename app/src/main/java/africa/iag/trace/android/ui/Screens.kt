@@ -1,6 +1,5 @@
 package africa.iag.trace.android.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,13 +9,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Archive
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.automirrored.outlined.ListAlt
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.QrCodeScanner
+import androidx.compose.material.icons.outlined.WorkOutline
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -37,11 +42,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import africa.iag.trace.android.ui.theme.DeskRow
+import africa.iag.trace.android.ui.theme.IagEmptyHint
+import africa.iag.trace.android.ui.theme.IagGroupedCard
+import africa.iag.trace.android.ui.theme.IagListRow
+import africa.iag.trace.android.ui.theme.IagSearchField
+import africa.iag.trace.android.ui.theme.SectionLabel
+import africa.iag.trace.android.ui.theme.WelcomeCard
+import africa.iag.trace.android.ui.theme.WelcomeStat
+import africa.iag.trace.android.ui.theme.iagTopBarColors
 import africa.iag.trace.android.ui.theme.rememberStoreTick
-import africa.iag.trace.android.ui.theme.statusColor
+import africa.iag.trace.core.APP_NAME
 import africa.iag.trace.core.APP_VERSION
 import africa.iag.trace.core.TraceSpecial
 import africa.iag.trace.core.TraceStore
@@ -60,6 +75,14 @@ import africa.iag.trace.core.moreRegisters
 import africa.iag.trace.core.nextStage
 import africa.iag.trace.core.routeById
 
+private fun routeIcon(id: String): ImageVector = when (id) {
+    "lookup", "qr" -> Icons.Outlined.QrCodeScanner
+    "farms" -> Icons.Outlined.Map
+    "farmers", "intake" -> Icons.Outlined.Person
+    "batches", "export" -> Icons.Outlined.Inventory2
+    else -> Icons.Outlined.WorkOutline
+}
+
 @Composable
 fun OverviewScreen(
     store: TraceStore,
@@ -67,47 +90,59 @@ fun OverviewScreen(
 ) {
     rememberStoreTick(store)
     val first = store.user?.name?.split(" ")?.firstOrNull() ?: "there"
+    val recent = store.recentActivity()
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         item {
-            Text("Good morning, $first", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("${store.user?.name} · ${store.user?.role?.name?.lowercase()?.replaceFirstChar { it.titlecase() }}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KpiCard("Farmers", "${store.farmers.size}", Modifier.weight(1f))
-                KpiCard("Lots", "${store.lots.size}", Modifier.weight(1f))
-            }
             Spacer(Modifier.height(8.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                KpiCard("EUDR", "${store.eudrPercent()}%", Modifier.weight(1f))
-                KpiCard("Inspections", "${store.pendingInspections.size}", Modifier.weight(1f))
-            }
+            WelcomeCard(
+                name = first,
+                subtitle = "${store.user?.name} · ${store.user?.role?.name?.lowercase()?.replaceFirstChar { it.titlecase() }}",
+                stats = listOf(
+                    WelcomeStat("farmers", "Farmers", "${store.farmers.size}"),
+                    WelcomeStat("lots", "Lots", "${store.lots.size}"),
+                    WelcomeStat("eudr", "EUDR", "${store.eudrPercent()}%"),
+                    WelcomeStat("inspect", "Checks", "${store.pendingInspections.size}"),
+                ),
+            )
         }
-        item { Text("Recent", fontWeight = FontWeight.Bold) }
-        items(store.recentActivity(), key = { it.copy + it.routeId }) { item ->
-            Text("${item.title}: ${item.copy}", style = MaterialTheme.typography.bodyMedium)
-        }
+        item { SectionLabel("Recent") }
         item {
-            OutlinedButton(onClick = { onOpenRoute("lookup") }) { Text("Public lookup") }
-            val role = store.role
-            if (role != null && canIntake(role)) {
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = { onOpenRoute("intake") }) { Text("Web intake") }
+            IagGroupedCard {
+                if (recent.isEmpty()) {
+                    IagEmptyHint("No recent activity.")
+                } else {
+                    recent.forEachIndexed { index, item ->
+                        IagListRow(divider = index < recent.lastIndex) {
+                            Column {
+                                Text(item.title, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                Text(item.copy, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                    }
+                }
             }
         }
-    }
-}
-
-@Composable
-private fun KpiCard(label: String, value: String, modifier: Modifier = Modifier) {
-    Card(modifier) {
-        Column(Modifier.padding(12.dp)) {
-            Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-            Text(value, fontWeight = FontWeight.Bold)
+        item { SectionLabel("Shortcuts") }
+        item {
+            IagGroupedCard {
+                IagListRow(onClick = { onOpenRoute("lookup") }) {
+                    DeskRow("Public lookup", "Trace a lot or QR code", Icons.Outlined.QrCodeScanner)
+                }
+                val role = store.role
+                if (role != null && canIntake(role)) {
+                    IagListRow(onClick = { onOpenRoute("intake") }) {
+                        DeskRow("Web intake", "Onboard a farmer and first batch", Icons.Outlined.Person)
+                    }
+                }
+                IagListRow(onClick = { onOpenRoute("admin") }, divider = false) {
+                    DeskRow("Audit log", "Who changed what", Icons.AutoMirrored.Outlined.ListAlt)
+                }
+            }
         }
+        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
@@ -121,41 +156,62 @@ fun PortalHomeScreen(
     var volume by remember { mutableStateOf("50") }
     var notes by remember { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
+    val lots = store.scoped("harvest-lots")
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         item {
-            Text(store.myFarmer?.get("name") ?: store.user?.name ?: "", fontWeight = FontWeight.Bold, fontSize = 22.sp)
-            Text("${store.myFarmer?.get("district").orEmpty()} · ${store.myFarmer?.get("variety").orEmpty()}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
+            WelcomeCard(
+                name = store.user?.name?.split(" ")?.firstOrNull() ?: "there",
+                subtitle = "${store.myFarmer?.get("district").orEmpty()} · ${store.myFarmer?.get("variety").orEmpty()}",
+                stats = listOf(
+                    WelcomeStat("lots", "Lots", "${lots.size}"),
+                    WelcomeStat("farm", "Farm", store.myFarmer?.get("name") ?: "Yours"),
+                ),
+            )
         }
         val role = store.role
         if (role != null && canRequestHarvest(role)) {
+            item { SectionLabel("Request pickup") }
             item {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Request pickup", fontWeight = FontWeight.Bold)
-                        OutlinedTextField(value = volume, onValueChange = { volume = it }, label = { Text("Volume kg") }, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Notes") }, modifier = Modifier.fillMaxWidth())
-                        if (message != null) Text(message!!)
+                IagGroupedCard {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedTextField(value = volume, onValueChange = { volume = it }, label = { Text("Volume kg") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp))
+                        OutlinedTextField(value = notes, onValueChange = { notes = it }, label = { Text("Notes") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp))
+                        if (message != null) Text(message!!, color = MaterialTheme.colorScheme.primary)
                         Button(onClick = {
                             store.requestHarvest(asNum(volume), notes)
                             message = "Request sent."
                             notes = ""
-                        }) { Text("Send harvest request") }
+                        }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Send harvest request") }
                     }
                 }
             }
         }
-        items(store.scoped("harvest-lots"), key = { it.id }) { lot ->
-            Card(Modifier.fillMaxWidth().clickable { onOpenRecord("harvest-lots", lot.id) }) {
-                Column(Modifier.padding(12.dp)) {
-                    Text(lot.label, fontWeight = FontWeight.Bold)
-                    Text("${lot["crop"]} · ${kg(asNum(lot["quantity"]))} · ${lot["grade"]}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        item { SectionLabel("Your lots") }
+        item {
+            IagGroupedCard {
+                if (lots.isEmpty()) {
+                    IagEmptyHint("No lots on your farm yet.")
+                } else {
+                    lots.forEachIndexed { index, lot ->
+                        IagListRow(onClick = { onOpenRecord("harvest-lots", lot.id) }, divider = index < lots.lastIndex) {
+                            DeskRow(lot.label, "${lot["crop"]} · ${kg(asNum(lot["quantity"]))} · ${lot["grade"]}", Icons.Outlined.Inventory2, lot.status.ifEmpty { null })
+                        }
+                    }
                 }
             }
         }
-        item { OutlinedButton(onClick = { onOpenRoute("lookup") }) { Text("Trace a lot") } }
+        item {
+            IagGroupedCard {
+                IagListRow(onClick = { onOpenRoute("lookup") }, divider = false) {
+                    DeskRow("Trace a lot", "Public lot story", Icons.Outlined.QrCodeScanner)
+                }
+            }
+        }
+        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
@@ -163,34 +219,49 @@ fun PortalHomeScreen(
 fun WorkCatalogScreen(store: TraceStore, onOpenRoute: (String) -> Unit) {
     rememberStoreTick(store)
     val groups = store.visibleRoutes().groupBy { it.group }
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        item { Spacer(Modifier.height(4.dp)) }
         for (group in africa.iag.trace.core.TraceGroup.entries) {
             val routes = groups[group].orEmpty()
             if (routes.isEmpty()) continue
-            item { Text(groupLabels[group] ?: group.name, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp)) }
-            items(routes, key = { it.id }) { route ->
-                Card(Modifier.fillMaxWidth().clickable { onOpenRoute(route.id) }) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text(route.label, fontWeight = FontWeight.Bold)
-                        if (route.copy.isNotEmpty()) Text(route.copy, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+            item { SectionLabel(groupLabels[group] ?: group.name) }
+            item {
+                IagGroupedCard {
+                    routes.forEachIndexed { index, route ->
+                        IagListRow(onClick = { onOpenRoute(route.id) }, divider = index < routes.lastIndex) {
+                            DeskRow(route.label, route.copy, routeIcon(route.id))
+                        }
                     }
                 }
             }
         }
+        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
 @Composable
 fun MoreScreen(store: TraceStore, onOpenRoute: (String) -> Unit) {
     rememberStoreTick(store)
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { Text("Registers", fontWeight = FontWeight.Bold) }
-        items(moreRegisters, key = { it.entity }) { item ->
-            Card(Modifier.fillMaxWidth().clickable { onOpenRoute("register:${item.entity}") }) {
-                Text(item.label, modifier = Modifier.padding(12.dp), fontWeight = FontWeight.Bold)
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        item { Spacer(Modifier.height(8.dp)); SectionLabel("Registers") }
+        item {
+            IagGroupedCard {
+                moreRegisters.forEachIndexed { index, item ->
+                    IagListRow(onClick = { onOpenRoute("register:${item.entity}") }, divider = index < moreRegisters.lastIndex) {
+                        DeskRow(item.label, "Open register", Icons.Outlined.Archive)
+                    }
+                }
             }
         }
-        item { OutlinedButton(onClick = { onOpenRoute("admin") }) { Text("Audit log") } }
+        item { SectionLabel("Admin") }
+        item {
+            IagGroupedCard {
+                IagListRow(onClick = { onOpenRoute("admin") }, divider = false) {
+                    DeskRow("Audit log", "Who changed what", Icons.AutoMirrored.Outlined.ListAlt)
+                }
+            }
+        }
+        item { Spacer(Modifier.height(24.dp)) }
     }
 }
 
@@ -200,22 +271,27 @@ fun RecordListScreen(store: TraceStore, entity: String, onOpenRecord: (String, S
     var query by remember { mutableStateOf("") }
     val meta = entities[entity]
     val rows = store.scoped(entity).filter { matchesQuery(it, query) }
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         item {
-            OutlinedTextField(value = query, onValueChange = { query = it }, label = { Text("Search") }, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(8.dp))
+            IagSearchField(query, { query = it }, "Search")
         }
-        items(rows, key = { it.id }) { row ->
-            Card(Modifier.fillMaxWidth().clickable { onOpenRecord(entity, row.id) }) {
-                Column(Modifier.padding(12.dp)) {
-                    Text(row.label, fontWeight = FontWeight.Bold)
-                    Text(row.subtitle(meta?.columns ?: listOf("status")), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
-                    Text(row.status, color = statusColor(row.status), fontSize = 12.sp)
+        item {
+            IagGroupedCard {
+                if (rows.isEmpty()) {
+                    IagEmptyHint("No records.")
+                } else {
+                    rows.forEachIndexed { index, row ->
+                        IagListRow(onClick = { onOpenRecord(entity, row.id) }, divider = index < rows.lastIndex) {
+                            DeskRow(row.label, row.subtitle(meta?.columns ?: listOf("status")), Icons.Outlined.Inventory2, row.status.ifEmpty { null })
+                        }
+                    }
                 }
             }
         }
+        item { Spacer(Modifier.height(24.dp)) }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RouteScreen(
@@ -227,8 +303,13 @@ fun RouteScreen(
     rememberStoreTick(store)
     if (routeId.startsWith("register:")) {
         val entity = routeId.removePrefix("register:")
-        Scaffold(topBar = {
-            TopAppBar(title = { Text(entities[entity]?.label ?: entity) }, navigationIcon = {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = {
+            TopAppBar(
+                title = { Text(entities[entity]?.label ?: entity) },
+                colors = iagTopBarColors(),
+                navigationIcon = {
                 IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
             })
         }) { padding ->
@@ -237,8 +318,13 @@ fun RouteScreen(
         return
     }
     val route = routeById(routeId)
-    Scaffold(topBar = {
-        TopAppBar(title = { Text(route?.label ?: routeId) }, navigationIcon = {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+        TopAppBar(
+            title = { Text(route?.label ?: routeId) },
+            colors = iagTopBarColors(),
+            navigationIcon = {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
         })
     }) { padding ->
@@ -267,29 +353,46 @@ fun LookupScreen(store: TraceStore) {
     rememberStoreTick(store)
     var code by remember { mutableStateOf("IAG-LOT-00421") }
     val hit = store.lookup(code)
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Public lookup", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        OutlinedTextField(value = code, onValueChange = { code = it }, label = { Text("Lot / QR / batch code") }, modifier = Modifier.fillMaxWidth())
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedTextField(
+            value = code,
+            onValueChange = { code = it },
+            label = { Text("Lot / QR / batch code") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+        )
         if (hit != null) {
-            Text(hit.code, fontWeight = FontWeight.Bold)
-            Text("Farmer: ${hit.farmer}")
-            Text("Farm: ${hit.farm}")
-            Text("District: ${hit.district}")
-            Text("Crop: ${hit.crop}")
-            Text("Harvest: ${hit.harvestDate}")
-            Text("Quantity: ${kg(hit.quantityKg)}")
-            Text("Grade: ${hit.grade}")
+            IagGroupedCard {
+                IagListRow(divider = true) { DeskRow("Farmer", hit.farmer, Icons.Outlined.Person) }
+                IagListRow(divider = true) { DeskRow("Farm", hit.farm, Icons.Outlined.Map) }
+                IagListRow(divider = true) { DeskRow("District", hit.district, Icons.Outlined.Map) }
+                IagListRow(divider = true) { DeskRow("Crop", hit.crop, Icons.Outlined.Inventory2) }
+                IagListRow(divider = true) { DeskRow("Harvest", hit.harvestDate, Icons.Outlined.Inventory2) }
+                IagListRow(divider = true) { DeskRow("Quantity", kg(hit.quantityKg), Icons.Outlined.Inventory2) }
+                IagListRow(divider = false) { DeskRow("Grade", hit.grade, Icons.Outlined.Inventory2) }
+            }
             if (hit.certs.isNotEmpty()) {
-                Text("Certifications", fontWeight = FontWeight.Bold)
-                hit.certs.forEach { Text(it) }
+                SectionLabel("Certifications")
+                IagGroupedCard {
+                    hit.certs.forEachIndexed { index, cert ->
+                        IagListRow(divider = index < hit.certs.lastIndex) { Text(cert) }
+                    }
+                }
             }
             if (hit.custody.isNotEmpty()) {
-                Text("Custody", fontWeight = FontWeight.Bold)
-                hit.custody.forEach { Text(it) }
+                SectionLabel("Custody")
+                IagGroupedCard {
+                    hit.custody.forEachIndexed { index, step ->
+                        IagListRow(divider = index < hit.custody.lastIndex) { Text(step) }
+                    }
+                }
             }
-            if (hit.story.isNotEmpty()) Text(hit.story)
+            if (hit.story.isNotEmpty()) {
+                SectionLabel("Story")
+                IagGroupedCard { IagEmptyHint(hit.story) }
+            }
         } else if (code.isNotBlank()) {
-            Text("No public story for that code.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            IagEmptyHint("No public story for that code.")
         }
     }
 }
@@ -359,11 +462,17 @@ fun IntakeScreen(store: TraceStore) {
 @Composable
 fun AuditScreen(store: TraceStore) {
     rememberStoreTick(store)
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(store.audit, key = { it.id }) { entry ->
-            Column {
-                Text("${entry.action} · ${entry.entity}", fontWeight = FontWeight.Bold)
-                Text("${entry.label} · ${entry.actor}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+    LazyColumn(Modifier.fillMaxSize().padding(16.dp)) {
+        item {
+            IagGroupedCard {
+                store.audit.forEachIndexed { index, entry ->
+                    IagListRow(divider = index < store.audit.lastIndex) {
+                        Column {
+                            Text("${entry.action} · ${entry.entity}", fontWeight = FontWeight.SemiBold)
+                            Text("${entry.label} · ${entry.actor}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                        }
+                    }
+                }
             }
         }
     }
@@ -371,12 +480,13 @@ fun AuditScreen(store: TraceStore) {
 
 @Composable
 fun HubScreen() {
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(hubSections, key = { it.id }) { section ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(12.dp)) {
-                    Text(section.label, fontWeight = FontWeight.Bold)
-                    Text(section.copy, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+    LazyColumn(Modifier.fillMaxSize().padding(16.dp)) {
+        item {
+            IagGroupedCard {
+                hubSections.forEachIndexed { index, section ->
+                    IagListRow(divider = index < hubSections.lastIndex) {
+                        DeskRow(section.label, section.copy, Icons.Outlined.WorkOutline)
+                    }
                 }
             }
         }
@@ -386,12 +496,14 @@ fun HubScreen() {
 @Composable
 fun ReportsScreen(store: TraceStore) {
     rememberStoreTick(store)
-    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Farmers: ${store.farmers.size}")
-        Text("Batches: ${store.batches.size}")
-        Text("Lots: ${store.lots.size}")
-        Text("EUDR compliant: ${store.eudrPercent()}%")
-        Text("Pending inspections: ${store.pendingInspections.size}")
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        IagGroupedCard {
+            IagListRow { DeskRow("Farmers", "${store.farmers.size}", Icons.Outlined.Person) }
+            IagListRow { DeskRow("Batches", "${store.batches.size}", Icons.Outlined.Inventory2) }
+            IagListRow { DeskRow("Lots", "${store.lots.size}", Icons.Outlined.Inventory2) }
+            IagListRow { DeskRow("EUDR compliant", "${store.eudrPercent()}%", Icons.AutoMirrored.Outlined.ListAlt) }
+            IagListRow(divider = false) { DeskRow("Pending inspections", "${store.pendingInspections.size}", Icons.AutoMirrored.Outlined.ListAlt) }
+        }
     }
 }
 
@@ -400,8 +512,13 @@ fun ReportsScreen(store: TraceStore) {
 fun RecordDetailScreen(store: TraceStore, entity: String, id: String, onBack: () -> Unit) {
     rememberStoreTick(store)
     val row = store.byId(entity, id)
-    Scaffold(topBar = {
-        TopAppBar(title = { Text(entities[entity]?.singular ?: entity) }, navigationIcon = {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+        TopAppBar(
+            title = { Text(entities[entity]?.singular ?: entity) },
+            colors = iagTopBarColors(),
+            navigationIcon = {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
         })
     }) { padding ->
@@ -433,20 +550,26 @@ fun RecordDetailScreen(store: TraceStore, entity: String, id: String, onBack: ()
 @Composable
 fun ProfileScreen(store: TraceStore, onBack: () -> Unit, onSignedOut: () -> Unit) {
     rememberStoreTick(store)
-    Scaffold(topBar = {
-        TopAppBar(title = { Text("Account") }, navigationIcon = {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+        TopAppBar(
+            title = { Text("Account") },
+            colors = iagTopBarColors(),
+            navigationIcon = {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") }
         })
     }) { padding ->
-        Column(Modifier.padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(store.user?.name ?: "", fontWeight = FontWeight.Bold, fontSize = 22.sp)
-            Text(store.user?.role?.name?.lowercase()?.replaceFirstChar { it.titlecase() } ?: "", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Trace Android $APP_VERSION", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            IagGroupedCard {
+                IagListRow { DeskRow(store.user?.name ?: "", store.user?.role?.name?.lowercase()?.replaceFirstChar { it.titlecase() } ?: "", Icons.Outlined.Person) }
+                IagListRow(divider = false) { DeskRow(APP_NAME, APP_VERSION, Icons.Outlined.WorkOutline) }
+            }
             Button(onClick = {
                 store.logout()
                 onSignedOut()
-            }, modifier = Modifier.fillMaxWidth()) { Text("Sign out") }
-            OutlinedButton(onClick = { store.resetDemo() }, modifier = Modifier.fillMaxWidth()) { Text("Reset demo data") }
+            }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Sign out") }
+            OutlinedButton(onClick = { store.resetDemo() }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(14.dp)) { Text("Reset demo data") }
         }
     }
 }

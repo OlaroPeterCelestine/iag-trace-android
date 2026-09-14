@@ -79,4 +79,5 @@ Kotlin · Jetpack Compose · Material 3 · TraceCore RBAC · SharedPreferences (
 | IAG Farmer Traceability | [iag-farmer-traceability](https://github.com/OlaroPeterCelestine/iag-farmer-traceability) | [README](https://github.com/OlaroPeterCelestine/iag-farmer-traceability#readme) |
 | IAG Trace iOS | [iag-trace-ios](https://github.com/OlaroPeterCelestine/iag-trace-ios) | [README](https://github.com/OlaroPeterCelestine/iag-trace-ios#readme) |
 | IAG Trace Android ← this repo | [iag-trace-android](https://github.com/OlaroPeterCelestine/iag-trace-android) | [README](https://github.com/OlaroPeterCelestine/iag-trace-android#readme) |
-| ACP Farmers City | [iag-acp-farmers-city](https://github.com/OlaroPeterCelestine/iag-acp-farmers-city) | [README](https://github.com/OlaroPeterCelestine/iag-acp-farmers-city#readme) |
+| ACP Farmers City iOS | [iag-acp-ios](https://github.com/OlaroPeterCelestine/iag-acp-ios) | [README](https://github.com/OlaroPeterCelestine/iag-acp-ios#readme) |
+| ACP Farmers City Android | [iag-acp-android](https://github.com/OlaroPeterCelestine/iag-acp-android) | [README](https://github.com/OlaroPeterCelestine/iag-acp-android#readme) |
